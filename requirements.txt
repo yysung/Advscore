@@ -1,0 +1,8 @@
+datasets-plus
+json-repair
+litellm
+tqdm
+matplotlib
+seaborn
+sentence-transformers
+loguru
