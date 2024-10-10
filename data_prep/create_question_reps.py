@@ -4,38 +4,18 @@ import os
 from typing import Optional
 
 import cohere
-import datasets
 import torch
+from datasets_plus import load_dataset
 from loguru import logger
 from sentence_transformers import SentenceTransformer
-from tqdm import tqdm, trange
-from datasets_plus import load_dataset
-
-
-
 
 embedding_models = [
     "all-mpnet-base-v2",
-    "cohere-small",
-    "cohere-large",
     "cohere-embed-english-v3.0",  # Cohere model
     "gritlm-7b",
     "gritlm-7b-custom",
     "e5-mistral-7b-instruct",
 ]
-
-
-class CohereEmbeddingModel:
-    def __init__(self, model_name: str, input_type: Optional[str] = None):
-        self.model_name = model_name
-        self.input_type = input_type
-        self.co = cohere.Client(os.environ["COHERE_API_KEY"])
-
-    def encode(self, documents: list[str]):
-        resp = self.co.embed(
-            documents, model=self.model_name, input_type=self.input_type
-        )
-        return torch.tensor(resp.embeddings)
 
 
 E5_MISTRAL_INST = (
@@ -91,6 +71,21 @@ class GritEmbeddingModel:
         return torch.tensor(vec)
 
 
+class CohereEmbeddingModel:
+    def __init__(self, model_name: str, input_type: Optional[str] = None):
+        self.model_name = model_name
+        self.input_type = input_type
+        self.co = cohere.Client(os.environ["COHERE_API_KEY"])
+
+    def encode(self, documents: list[str]):
+        resp = self.co.embed(
+            texts=documents,
+            model=self.model_name,
+            input_type=self.input_type,
+        )
+        return torch.tensor(resp.embeddings)
+
+
 def get_model(model_name: str, embed_task: Optional[str] = None):
     """Get a model for embedding. embed_task is only used for Cohere models."""
     if model_name.startswith("cohere"):
@@ -120,16 +115,31 @@ def make_model_inputs(entry: dict[str, str], strategy: str):
         return (f"Question: {question} Answer:{answer}", f"{page_content}")
 
 
+def get_strategy_code(strategy: str):
+    if strategy == "question":
+        return "q"
+    if strategy == "question-answer":
+        return "qa"
+    if strategy == "question-answer-ref":
+        return "qar"
+    if strategy == "question-answer-and-ref":
+        return "qa,r"
+
+
 def make_embeddings(dataset, model, strategy: str, batch_size=32):
     def encode_batch(batch):
         batch_entries = [dict(zip(batch, t)) for t in zip(*batch.values())]
         docs = [make_model_inputs(entry, strategy) for entry in batch_entries]
+
         # Flatten the list of docs
         flat_docs = [doc for sublist in docs for doc in sublist]
         embeddings = model.encode(flat_docs)
+
         # Reshape embeddings if strategy returns multiple docs per entry
         if strategy in ["question-answer-and-ref"]:
-            embeddings = embeddings.reshape(len(batch), -1, embeddings.shape[-1])
+            embeddings = embeddings.reshape(
+                len(batch_entries), -1, embeddings.shape[-1]
+            )
         return {"embedding": embeddings}
 
     encoded_dataset = dataset.map(
@@ -152,18 +162,20 @@ def main(args: argparse.Namespace):
     else:
         model_name = args.model_name
 
+    strategy_code = get_strategy_code(args.strategy)
     output_path = (
-        f"data/embeddings/{args.dataset_name}-{args.strategy}-{model_name}-embed.pt"
+        f"data/embeddings/{args.dataset_name}-{strategy_code}-{model_name}-embed.pt"
     )
 
     logger.info("Output path: {}", output_path)
     dataset_full_name = f"datasets/{args.dataset_name}"
     dataset = load_dataset(dataset_full_name)
-    print(dataset)
-    logger.info("Encoding documents...")
+
+    logger.info(f"{args.dataset_name}: Encoding documents...")
     encoded_dataset = make_embeddings(dataset, model, args.strategy, args.batch_size)
     state_dict = dict(zip(encoded_dataset["id"], encoded_dataset["embedding"]))
-    logger.info("Saving embeddings to {}", output_path)
+
+    logger.info(f"{args.dataset_name}: Saving embeddings to {output_path}")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     torch.save(state_dict, output_path)
 
@@ -182,6 +194,7 @@ def add_arguments(
 
     parser.add_argument(
         "--embed-task",
+        "-t",
         default="clustering",
         help="Cohere embedding task, only used for Cohere v3 embed models. Ignored otherwise.",
     )
@@ -212,5 +225,25 @@ if __name__ == "__main__":
     parser = add_arguments()
     args = parser.parse_args()
     main(args)
+
+# %%
+import os
+import re
+
+
+def rename_embedding_files():
+    embeddings_dir = "data/embeddings"
+
+    for filename in os.listdir(embeddings_dir):
+        if "question-answer-ref" in filename:
+            new_filename = filename.replace("question-answer-ref", "qar")
+            old_path = os.path.join(embeddings_dir, filename)
+            new_path = os.path.join(embeddings_dir, new_filename)
+            os.rename(old_path, new_path)
+            print(f"Renamed: {filename} -> {new_filename}")
+
+
+if __name__ == "__main__":
+    rename_embedding_files()
 
 # %%

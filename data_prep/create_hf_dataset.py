@@ -1,13 +1,12 @@
 # %%
 import os
 import os.path as osp
-from tqdm import tqdm
-from llm_utils import categorize_answer
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import pandas as pd
+
 import datasets
-from llm_utils import find_focus_entity, generate_wiki_summary
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from llm_utils import categorize_answer, find_focus_entity, generate_wiki_summary
 
 os.environ["HF_TOKEN"] = "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"
 
@@ -89,15 +88,13 @@ def prepare_dataset(dataset_name: str):
 
     dataset = datasets.Dataset.from_dict(data)
     dataset = dataset.map(
-        lambda x, idx: {"id": f"q{idx+1}"}, with_indices=True, keep_in_memory=True)
+        lambda x, idx: {"id": f"q{idx+1}"}, with_indices=True, keep_in_memory=True
+    )
     if dataset_name == "fm2":
         dataset = dataset.map(map_focus_entity_and_reference_fm2)
     else:
         dataset = dataset.map(map_focus_entity_and_reference)
     dataset.save_to_disk(f"datasets/{dataset_name}")
-
-
-
 
 
 def parallel_prepare_dataset(dataset_name):
