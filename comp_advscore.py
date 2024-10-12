@@ -18,7 +18,7 @@ import funcs_mirt
 
 # Comment/uncomment to switch between methods
 funcs = funcs_mirt
-funcs = funcs_caimira
+# funcs = funcs_caimira
 
 # Load the functions and constants from the selected irt method
 load_dataframe_dict = funcs.load_dataframe_dict
@@ -295,9 +295,10 @@ def get_advscore_df(name, year, agg="weighted_mean", cumulative=False):
     )
     margin_probs = human_probs - ai_probs
     mean_margin_probs = margin_probs.mean()
-    kappa_iif = get_kappa_iif(dataframe_dict).mean()
-    kappa_disc = get_kappa_aggdisc(dataframe_dict).mean()
-
+    kappa_iif_values = get_kappa_iif(dataframe_dict)
+    kappa_disc_values = get_kappa_aggdisc(dataframe_dict)
+    kappa_iif = kappa_iif_values.mean()
+    kappa_disc = kappa_disc_values.mean()
     delta_h = mad_median(human_diff(dataframe_dict))
     delta_ai = mad_median(ai_diff(dataframe_dict))
 
@@ -336,7 +337,7 @@ def get_advscore_df(name, year, agg="weighted_mean", cumulative=False):
         lambda x: compute_advscore_v3(x["mean_margin"], x["kappa_iif"], x["delta"]),
         axis=1,
     )
-    return df, margin_probs
+    return df, margin_probs, kappa_iif_values
 
 
 def get_all_advscore_per_year(
@@ -345,7 +346,9 @@ def get_all_advscore_per_year(
     df_list = []
     for name in DATASET_NAMES:
         print("Dataset:", name)
-        df, margin_probs = get_advscore_df(name, year, agg=agg, cumulative=cumulative)
+        df, margin_probs, kappa_values = get_advscore_df(
+            name, year, agg=agg, cumulative=cumulative
+        )
         df_list.append(df)
 
     advscore_df = pd.concat(df_list)
@@ -353,11 +356,12 @@ def get_all_advscore_per_year(
 
 
 # %%
-_, margin_probs = get_advscore_df(
-    "bamboogle", "2024", agg="weighted_mean", cumulative=True
+_, margin_probs, kappa_values = get_advscore_df(
+    "advqa_combined", "2024", agg="weighted_mean", cumulative=True
 )
 print(margin_probs.shape)
-plt.hist(margin_probs)
+plt.hist(margin_probs, bins=20, ec="black")
+plt.hist(kappa_values, bins=20, ec="black")
 
 # %%
 # df = get_advscore_df("trickme", "2024", agg="weighted_mean", cumulative=True)
