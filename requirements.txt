@@ -6,3 +6,6 @@ matplotlib
 seaborn
 sentence-transformers
 loguru
+tabulate
+plotly
+nbformat
