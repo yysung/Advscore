@@ -61,8 +61,6 @@ for i, year in enumerate(sorted(YEARS)):
 
 rprint(CUM_MODELS_BY_TIME)
 
-# %%
-
 
 def get_agent_type(subject):
     name = subject.lower()
@@ -215,7 +213,7 @@ def create_avg_prob(
 
     if agg == "weighted_mean":
         p_star = create_avg_prob_subject(skills_subset, questions_df)
-        p_star = skills_subset["accuracy"].values
+        p_star = skills_subset["accuracy"].values + 1e-6
         skills = skills_subset[SKILL_COLS].values
         mean_skill = (skills * p_star[:, None]).sum(axis=0) / p_star.sum()
         max_skill = mean_skill
@@ -356,12 +354,20 @@ def get_all_advscore_per_year(
 
 
 # %%
-_, margin_probs, kappa_values = get_advscore_df(
-    "advqa_combined", "2024", agg="weighted_mean", cumulative=True
-)
-print(margin_probs.shape)
-plt.hist(margin_probs, bins=20, ec="black")
-plt.hist(kappa_values, bins=20, ec="black")
+for dataset_name in DATASET_NAMES:
+    _, margin_probs, kappa_values = get_advscore_df(
+        dataset_name, "2024", agg="weighted_mean", cumulative=True
+    )
+    print(margin_probs.shape)
+    plt.hist(margin_probs, bins=20, ec="black")
+    plt.hist(kappa_values, bins=20, ec="black")
+    scores_df = pd.DataFrame({"margin": margin_probs, "kappa": kappa_values})
+    scores_df.to_csv(f"data/{dataset_name}_scores.csv")
+
+# %% SKILLS Density Plot
+
+
+# %%
 
 # %%
 # df = get_advscore_df("trickme", "2024", agg="weighted_mean", cumulative=True)

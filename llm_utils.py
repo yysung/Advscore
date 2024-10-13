@@ -1,9 +1,10 @@
-import litellm
-from litellm.caching import Cache
+# %%
+import os
 from typing import Optional
 
-import os
 import json_repair
+import litellm
+from litellm.caching import Cache
 
 litellm.cache = Cache()
 
@@ -35,6 +36,52 @@ Return your answer in the following JSON format:
 {
 "entity": "Entity name/None"
 }"""
+
+adv_type_categorization_system_prompt = """
+Annotation Task: Identify features and tactics used in creating adversarial questions for language models.
+
+Instructions:
+1. Analyze each question carefully, considering both the question text and the provided correct answer.
+2. Select up to 3 features/tactics from the list below that best describe the adversarial nature of the question.
+3. If no features/tactics apply, respond with "None".
+4. Provide a detailed explanation for your choices, including specific text highlights.
+
+Features/Tactics:
+1. Composing Seen Clues: Requires integrating multiple explicit clues from the question to derive the correct answer.
+2. Logic and Calculation: Involves mathematical operations, logical deductions, or manipulations of partial information.
+3. Multi-Step Reasoning: Necessitates a sequence of inferential steps between different entities or concepts to reach the correct conclusion.
+4. Negation: Employs "not", "non-", "no", or other forms of negation that could potentially misdirect the model's understanding or response.
+5. Temporal Misdirection: Incorporates specific dates, time periods, or temporal relationships that may lead the model to an incorrect temporal context.
+6. Location Misdirection: Utilizes geographical information or spatial relationships in a way that could mislead the model's spatial reasoning.
+7. Commonsense: Requires application of general world knowledge not explicitly stated in the question. Specify the particular commonsense knowledge needed when applicable.
+8. Domain Expertise: Demands specialized knowledge in a specific field (e.g., science, history, literature, technology) to accurately interpret and answer the question.
+9. Irrelevant Clues: Includes extraneous or redundant information designed to distract the model from the core inference required for the correct answer.
+10. Crosslingual: Incorporates multilingual elements or cross-lingual references that may challenge the model's language understanding or translation capabilities.
+
+Response Format (JSON):
+{
+    "categories": ["Feature1", "Feature2", "Feature3"],
+    "explanation": "Detailed reasoning for the chosen features/tactics. Blue highlight: [text indicating adversarial elements]. Yellow highlight: [text indicating question type or key elements]."
+}
+
+Example:
+Q: "In 2025, which city will not host the Olympics that it hosted in 1964?"
+A: "Tokyo"
+
+Annotation:
+{
+    "categories": ["Temporal Misdirection", "Negation"],
+    "explanation": "This question employs two key adversarial tactics. Temporal Misdirection: The question mentions a future date ('2025') and a past date ('1964'), potentially confusing a model about the temporal context. Blue highlight: [In 2025], [1964]. Negation: The use of 'not' in the question could mislead a model into providing an affirmative answer instead of identifying the city that won't host. Blue highlight: [will not host]. The combination of these elements makes it challenging for a model to correctly identify Tokyo as the answer. Yellow highlight: [which city will not host the Olympics that it hosted]."
+}
+
+If no features/tactics apply:
+{
+    "categories": ["None"],
+    "explanation": "After careful analysis, no specific adversarial features or tactics were identified in this question. The question appears to be straightforward and does not employ any of the listed adversarial techniques."
+}
+
+Note: Ensure your explanation is thorough, directly referencing the question text and explaining how each identified feature/tactic contributes to the question's adversarial nature. Consider how these elements might challenge a language model in producing the correct answer provided.
+"""
 
 
 def query_model(
@@ -125,3 +172,11 @@ def get_wikipedia_summary(page_title: str, max_chars: int = 1000):
     return None  # Return None if no summary found or if the request failed
 
 
+def categorize_adv_type(question: str, answer: str):
+    input_text = f"Answer: {answer}. Question about {answer}: {question}"
+    return query_model(
+        input_text, adv_type_categorization_system_prompt, return_json=True
+    )
+
+
+# %%
