@@ -106,7 +106,7 @@ fig.update_layout(
     height=300,
     width=1200,
     showlegend=True,
-    margin=dict(l=10, r=10, t=20, b=40),  # Increased bottom margin for legend and title
+    margin=dict(l=10, r=10, t=20, b=45),  # Increased bottom margin for legend and title
     legend=dict(
         orientation="v",
         yanchor="middle",
@@ -116,7 +116,7 @@ fig.update_layout(
     ),  # Moved legend to bottom
     title=dict(
         text="Skill Distribution Across Datasets",
-        y=0,  # Adjusted y position to accommodate legend
+        y=0.02,  # Adjusted y position to accommodate legend
         # x=0.5,
         xanchor="center",
         yanchor="bottom",
