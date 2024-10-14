@@ -4,7 +4,13 @@ from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 from scipy import stats
 
-from funcs_mirt import load_dataframe_dict
+from funcs_mirt import (
+    DIFF_COLS,
+    REL_COLS,
+    SKILL_COLS,
+    irt_logit_func,
+    load_dataframe_dict,
+)
 
 DATASET_NAMES = ["advqa_combined", "fm2", "bamboogle", "trickme"]
 
@@ -18,6 +24,31 @@ model_line_color = "rgba(203, 67, 53 , 1)"  # Slightly lighter gray for models
 model_fill_color = "rgba(203, 67, 53 , 0.5)"  # Slightly lighter gray for models
 model_marker_color = "rgba(123, 36, 28 , 1)"  # Slightly lighter gray for models
 
+iif_line_color = "rgba(76, 175, 80, 0.7)"  # Muted green for IIF
+iif_fill_color = "rgba(76, 175, 80, 0.4)"  # Muted green for IIF
+iif_marker_color = "rgba(46, 106, 53, 1)"  # Muted green for IIF
+
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+
+def irt_prob_func(skills, diff, rels):
+    # skills: (n_agents, n_dim)
+    logits = irt_logit_func(skills, diff, rels)
+    probs = sigmoid(logits)
+    return probs
+
+
+def calculate_iif(skills, diff, rels):
+    """Calculate Item Information Function (MIRT) for each item."""
+    P = irt_prob_func(skills, diff, rels)
+    Q = 1 - P
+    pq = P * Q
+    rel_sq = rels * rels
+    value = rel_sq[:, 0] * pq
+    return value.mean(axis=-1)
+
 
 fig = make_subplots(
     rows=2,
@@ -28,22 +59,40 @@ fig = make_subplots(
     shared_xaxes=True,
 )
 for i, dataset_name in enumerate(DATASET_NAMES, 1):
+    # Generate points for smooth curves
+    x_range = np.linspace(-3, 3, num=100)
+
     agents_df = load_dataframe_dict(dataset_name)["agents"]
+    items_df = load_dataframe_dict(dataset_name)["questions"]
+    diff = items_df[DIFF_COLS].values
+    rels = items_df[REL_COLS].values
+    skills = np.linalg.norm(agents_df[SKILL_COLS].values, axis=-1)
     humans_df = agents_df[agents_df["subject_type"] == "human"]
     models_df = agents_df[agents_df["subject_type"] == "ai"]
     human_mean = humans_df["skill_0"].mean()
     model_mean = models_df["skill_0"].mean()
+    iif_values = calculate_iif(x_range[:, None], diff, rels)
 
     # Calculate KDE for humans and models
     human_kde = stats.gaussian_kde(humans_df["skill_0"].dropna(), bw_method=0.5)
     model_kde = stats.gaussian_kde(models_df["skill_0"].dropna(), bw_method=0.5)
-
-    # Generate points for smooth curves
-    x_range = np.linspace(-2, 2, num=200)
+    iif_kde = stats.gaussian_kde(iif_values, bw_method=0.5)
 
     # Calculate y values for all datasets to find global max
     human_y = human_kde(x_range)
     model_y = model_kde(x_range)
+    iif_y = iif_kde(x_range)
+
+    # Calculate the overlap
+    overlap_y = np.where(
+        (x_range < min(human_mean, model_mean))
+        | (x_range > max(human_mean, model_mean)),
+        0,
+        iif_y,
+        # np.maximum(human_y, model_y),
+    )
+    # overlap_y = np.minimum(overlap_y, iif_y)
+
     if i == 1:
         global_max_y = max(max(human_y), max(model_y))
     else:
@@ -93,6 +142,36 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
             line={"color": model_line_color},
             fill="tozeroy",
             fillcolor=model_fill_color,
+            showlegend=(i == 1),  # Show legend only for the first subplot
+        ),
+        row=(i - 1) // 2 + 1,
+        col=(i - 1) % 2 + 1,
+    )
+
+    # Add trace for overlap with dotted texture
+    fig.add_trace(
+        go.Scatter(
+            x=x_range,
+            y=overlap_y,
+            name="Overlap",
+            fill="tozeroy",
+            fillcolor="rgba(128, 128, 128, 0.5)",
+            line=dict(color="rgba(0,0,0,0)"),
+            fillpattern=dict(shape=".", bgcolor="rgba(128, 128, 128, 0.8)", size=5),
+            showlegend=(i == 1),  # Show legend only for the first subplot
+        ),
+        row=(i - 1) // 2 + 1,
+        col=(i - 1) % 2 + 1,
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=x_range,
+            y=iif_y,
+            name="Item Info. Func.",
+            line={"color": iif_line_color},
+            fill="tozeroy",
+            fillcolor=iif_fill_color,
             showlegend=(i == 1),  # Show legend only for the first subplot
         ),
         row=(i - 1) // 2 + 1,
