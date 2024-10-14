@@ -8,4 +8,5 @@ sentence-transformers
 loguru
 tabulate
 plotly
+plotnine
 nbformat

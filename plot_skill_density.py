@@ -20,9 +20,10 @@ model_marker_color = "rgba(123, 36, 28 , 1)"  # Slightly lighter gray for models
 
 
 fig = make_subplots(
-    rows=1,
-    cols=4,
+    rows=2,
+    cols=2,
     subplot_titles=DATASET_NAMES_SANITIZED,
+    vertical_spacing=0.1,
     shared_yaxes=True,
     shared_xaxes=True,
 )
@@ -38,88 +39,99 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
     model_kde = stats.gaussian_kde(models_df["skill_0"].dropna(), bw_method=0.5)
 
     # Generate points for smooth curves
-    x_range = np.linspace(
-        min(humans_df["skill_0"].min(), models_df["skill_0"].min()),
-        max(humans_df["skill_0"].max(), models_df["skill_0"].max()),
-        num=200,
-    )
     x_range = np.linspace(-2, 2, num=200)
+
+    # Calculate y values for all datasets to find global max
+    human_y = human_kde(x_range)
+    model_y = model_kde(x_range)
+    if i == 1:
+        global_max_y = max(max(human_y), max(model_y))
+    else:
+        global_max_y = max(global_max_y, max(human_y), max(model_y))
+
     # Add vertical lines for means
     fig.add_shape(
         type="line",
         x0=human_mean,
         y0=0,
         x1=human_mean,
-        y1=max(human_kde(x_range)),
+        y1=max(human_y),
         line={"color": human_marker_color, "width": 2, "dash": "dot"},
-        row=1,
-        col=i,
+        row=(i - 1) // 2 + 1,
+        col=(i - 1) % 2 + 1,
     )
     fig.add_shape(
         type="line",
         x0=model_mean,
         y0=0,
         x1=model_mean,
-        y1=max(model_kde(x_range)),
+        y1=max(model_y),
         line={"color": model_marker_color, "width": 2, "dash": "dot"},
-        row=1,
-        col=i,
+        row=(i - 1) // 2 + 1,
+        col=(i - 1) % 2 + 1,
     )
 
     # Add traces for humans and models with filled area
     fig.add_trace(
         go.Scatter(
             x=x_range,
-            y=human_kde(x_range),
+            y=human_y,
             name="Human",
             line={"color": human_line_color},
             fill="tozeroy",
             fillcolor=human_fill_color,
             showlegend=(i == 1),  # Show legend only for the first subplot
         ),
-        row=1,
-        col=i,
+        row=(i - 1) // 2 + 1,
+        col=(i - 1) % 2 + 1,
     )
     fig.add_trace(
         go.Scatter(
             x=x_range,
-            y=model_kde(x_range),
+            y=model_y,
             name="AI",
             line={"color": model_line_color},
             fill="tozeroy",
             fillcolor=model_fill_color,
             showlegend=(i == 1),  # Show legend only for the first subplot
         ),
-        row=1,
-        col=i,
+        row=(i - 1) // 2 + 1,
+        col=(i - 1) % 2 + 1,
     )
 
     # Update axes labels
-    fig.update_xaxes(row=1, col=i, showticklabels=True)
+    fig.update_xaxes(row=(i - 1) // 2 + 1, col=(i - 1) % 2 + 1, showticklabels=True)
     fig.update_yaxes(
-        title_text="Density" if i == 1 else None, row=1, col=i, showticklabels=True
+        title_text="Density" if i in [1, 3] else None,
+        title_font=dict(size=18),
+        row=(i - 1) // 2 + 1,
+        col=(i - 1) % 2 + 1,
+        showticklabels=True,
+        range=[0, global_max_y],  # Set y-axis range to be the same for all subplots
     )
 
 # Update layout to match ggplot2 theme
 fig.update_layout(
     template="ggplot2",
-    height=300,
-    width=1200,
+    height=600,
+    width=800,
     showlegend=True,
-    margin=dict(l=10, r=10, t=20, b=45),  # Increased bottom margin for legend and title
+    margin=dict(l=10, r=10, t=60, b=10),  # Increased bottom margin for legend and title
     legend=dict(
-        orientation="v",
-        yanchor="middle",
-        y=0.5,
-        xanchor="left",
-        x=1.0,
+        orientation="h",
+        yanchor="bottom",
+        y=-0.12,
+        xanchor="center",
+        x=0.5,
+        font=dict(size=18),
     ),  # Moved legend to bottom
     title=dict(
         text="Skill Distribution Across Datasets",
-        y=0.02,  # Adjusted y position to accommodate legend
-        # x=0.5,
+        font=dict(size=18),
+        y=0.98,  # Adjusted y position to accommodate legend
+        x=0.5,
         xanchor="center",
-        yanchor="bottom",
+        yanchor="top",
     ),
 )
 

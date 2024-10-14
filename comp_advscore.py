@@ -94,15 +94,15 @@ def calculate_iif(skills, diff, rels):
     P = irt_prob_func(skills, diff, rels)
     Q = 1 - P
     pq = P * Q
-    if len(rels.shape) == 1:
+    if rels.shape[1] == 1:
         rel_sq = rels * rels
-        return rel_sq * pq
+        return rel_sq[:, 0] * pq
     else:
         rel_sq = np.einsum("bi,bj->bij", rels, rels)
         return rel_sq * pq[:, :, None, None]
 
 
-def get_iif_total_info_1d(diff, rels, theta_range=(-4, 4)):
+def get_iif_metrics_1d(diff, rels, theta_range=(-5, 5)):
     """Calculate metrics based on Item Information Function"""
     theta = np.linspace(*theta_range, 5000)[:, None]
     iif = calculate_iif(theta, diff, rels)
@@ -115,7 +115,11 @@ def get_iif_total_info_1d(diff, rels, theta_range=(-4, 4)):
     total_info = np.array(total_info)
     info_width = np.sum(iif > (peak_info[None, :] / 2), axis=0) * (theta[1] - theta[0])
 
-    return total_info
+    return total_info, peak_info, peak_theta, info_width
+
+
+def get_iif_total_info_1d(diff, rels, theta_range=(-5, 5)):
+    return get_iif_metrics_1d(diff, rels, theta_range)[0]
 
 
 def get_iif_total_info_2d(skills, diff, rels):
@@ -130,7 +134,7 @@ def get_iif_total_info_2d(skills, diff, rels):
 
 
 def get_iif_total_info(skills, diff, rels):
-    if len(rels.shape) == 1:
+    if rels.shape[1] == 1:
         return get_iif_total_info_1d(diff, rels, theta_range=(-5, 5))
     else:
         return get_iif_total_info_2d(skills, diff, rels)
@@ -183,8 +187,7 @@ def create_avg_prob(
     if subject_type == "ai":
         ai_this_year = models_by_time[ai_year]
         skills_subset = skills_subset[skills_subset["subject_id"].isin(ai_this_year)]
-    # print(f"Skills subset for {subject_type}:", skills_subset)
-    # Select the row where full_skill is the highest
+
     if agg == "max":
         skills_subset = skills_subset.loc[skills_subset["eff_skill"].idxmax()]
         max_skill = skills_subset[SKILL_COLS].values
@@ -229,6 +232,35 @@ def create_avg_prob(
     rels = questions_df[REL_COLS].values  # (n_items, n_dim)
     probs = irt_prob_func(max_skill, diff, rels)
     return probs.mean(), probs.std(), probs
+
+
+def compute_percieved_expert_diff(
+    dataframe_dict,
+    subject_type: str,
+    is_crowd: bool = False,
+):
+    questions_df = dataframe_dict["questions"]
+    agents_df = dataframe_dict["agents"]
+    rels = questions_df[REL_COLS].values
+    diff = questions_df[DIFF_COLS].values
+
+    skills_subset = agents_df[agents_df["subject_type"] == subject_type]
+    mean_skill = skills_subset[SKILL_COLS].values.mean(axis=0)
+    std_skill = skills_subset[SKILL_COLS].values.std(axis=0)
+    expert_skill_threshold = mean_skill + std_skill
+    if is_crowd:
+        expert_skills = skills_subset[
+            (skills_subset[SKILL_COLS] > expert_skill_threshold).all(axis=1)
+        ][SKILL_COLS].values
+    else:
+        expert_skills = skills_subset[SKILL_COLS].values
+
+    expert_probs = irt_prob_func(expert_skills, diff, rels).T
+    dev = expert_probs - expert_probs.mean(axis=1, keepdims=True)
+    return np.abs(dev).mean(axis=1)
+
+
+# %%
 
 
 def mad_mean(x):
@@ -280,10 +312,10 @@ def compute_advscore_v2(margin, kappa, delta):
 
 
 def compute_advscore_v3(margin, kappa, delta):
-    return margin * (1 + kappa)
+    return margin * (1 + kappa) / (1 + delta)
 
 
-def get_advscore_df(name, year, agg="weighted_mean", cumulative=False):
+def get_advscore_df(name, year, agg="weighted_mean", cumulative=False, is_crowd=True):
     dataframe_dict = load_dataframe_dict(name)
     human_prob_mean, human_std, human_probs = create_avg_prob(
         dataframe_dict, "human", ai_year=year, agg=agg, cumulative=cumulative
@@ -292,49 +324,44 @@ def get_advscore_df(name, year, agg="weighted_mean", cumulative=False):
         dataframe_dict, "ai", ai_year=year, agg=agg, cumulative=cumulative
     )
     margin_probs = human_probs - ai_probs
-    mean_margin_probs = margin_probs.mean()
     kappa_iif_values = get_kappa_iif(dataframe_dict)
     kappa_disc_values = get_kappa_aggdisc(dataframe_dict)
-    kappa_iif = kappa_iif_values.mean()
-    kappa_disc = kappa_disc_values.mean()
-    delta_h = mad_median(human_diff(dataframe_dict))
-    delta_ai = mad_median(ai_diff(dataframe_dict))
+    delta_h_values = compute_percieved_expert_diff(
+        dataframe_dict, "human", is_crowd=is_crowd
+    )
 
-    delta = delta_h
+    mean_margin_prob = margin_probs.mean()
+    mean_kappa_iif = kappa_iif_values.mean()
+    mean_kappa_disc = kappa_disc_values.mean()
+
+    mean_delta = delta_h_values.mean()
 
     data = [
         ["Human average probability", f"{human_prob_mean:.4f} ± {human_std:.4f}"],
         ["AI average probability", f"{ai_prob_mean:.4f} ± {ai_std:.4f}"],
-        ["Mean of margin probabilities", f"{mean_margin_probs:.4f}"],
-        ["agg_disc (kappa)", f"{kappa_disc:.4f}"],
-        ["agg_iif (kappa)", f"{kappa_iif:.4f}"],
-        ["mad of human_difficulty (delta)", f"{delta:.4f}"],
+        ["Mean of margin probabilities", f"{mean_margin_prob:.4f}"],
+        ["agg_disc (kappa)", f"{mean_kappa_disc:.4f}"],
+        ["agg_iif (kappa)", f"{mean_kappa_iif:.4f}"],
+        ["mad of human_difficulty (delta)", f"{mean_delta:.4f}"],
     ]
 
     # print(tabulate(data, headers=["Metric", "Value"], tablefmt="grid"))
     # print("__________________________________")
-
+    print(mean_margin_prob.shape, mean_kappa_iif.shape, mean_delta.shape)
     df = pd.DataFrame(
         {
-            "mean_margin": mean_margin_probs,
-            "kappa_iif": kappa_iif,
-            "kappa_disc": kappa_disc,
-            "delta": delta,
+            "mean_margin": mean_margin_prob,
+            "kappa": mean_kappa_iif,
+            "delta": mean_delta,
         },
         index=[name],
     )
-    df["advscore_v1"] = df.apply(
-        lambda x: compute_advscore_v1(x["mean_margin"], x["kappa_iif"], x["delta"]),
-        axis=1,
-    )
-    df["advscore_v2"] = df.apply(
-        lambda x: compute_advscore_v2(x["mean_margin"], x["kappa_iif"], x["delta"]),
-        axis=1,
-    )
-    df["advscore_v3"] = df.apply(
-        lambda x: compute_advscore_v3(x["mean_margin"], x["kappa_iif"], x["delta"]),
-        axis=1,
-    )
+    adv_scores_v1 = compute_advscore_v1(margin_probs, kappa_iif_values, delta_h_values)
+    adv_scores_v2 = compute_advscore_v2(margin_probs, kappa_iif_values, delta_h_values)
+    adv_scores_v3 = compute_advscore_v3(margin_probs, kappa_iif_values, delta_h_values)
+    df["advscore_v1"] = adv_scores_v1.mean()
+    df["advscore_v2"] = adv_scores_v2.mean()
+    df["advscore_v3"] = adv_scores_v3.mean()
     return df, margin_probs, kappa_iif_values
 
 
@@ -344,8 +371,9 @@ def get_all_advscore_per_year(
     df_list = []
     for name in DATASET_NAMES:
         print("Dataset:", name)
+        is_crowd = name != "trickme"
         df, margin_probs, kappa_values = get_advscore_df(
-            name, year, agg=agg, cumulative=cumulative
+            name, year, agg=agg, cumulative=cumulative, is_crowd=is_crowd
         )
         df_list.append(df)
 
@@ -363,11 +391,6 @@ for dataset_name in DATASET_NAMES:
     plt.hist(kappa_values, bins=20, ec="black")
     scores_df = pd.DataFrame({"margin": margin_probs, "kappa": kappa_values})
     scores_df.to_csv(f"data/{dataset_name}_scores.csv")
-
-# %% SKILLS Density Plot
-
-
-# %%
 
 # %%
 # df = get_advscore_df("trickme", "2024", agg="weighted_mean", cumulative=True)
