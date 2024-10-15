@@ -135,3 +135,5 @@ def linear_regression_with_significance(
     df.loc[:, "sig"] = df["pvalue"].apply(sig_stars)
 
     return model_fit, df.set_index("name")
+
+# %%

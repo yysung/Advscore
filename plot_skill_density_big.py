@@ -12,9 +12,9 @@ from funcs_mirt import (
     load_dataframe_dict,
 )
 
-DATASET_NAMES = ["advqa_combined", "fm2", "bamboogle", "trickme"]
+DATASET_NAMES = [ "fm2","bamboogle", "trickme","advqa_combined"]
 
-DATASET_NAMES_SANITIZED = ["AdvQA", "FM2", "Bamboogle", "TrickMe"]
+DATASET_NAMES_SANITIZED = [ "FM2 (AdvScore: -0.08)", "BAMBOOGLE (AdvScore: -0.06)","TRICKME (AdvScore: 0.12)", "AdvQA (AdvScore: 0.13)" ]
 
 human_line_color = "rgba(46, 134, 193, 1)"  # Muted gray for humans
 human_fill_color = "rgba(46, 134, 193, 0.5)"  # Muted gray for humans
@@ -28,6 +28,8 @@ iif_line_color = "rgba(76, 175, 80, 0.7)"  # Muted green for IIF
 iif_fill_color = "rgba(76, 175, 80, 0.4)"  # Muted green for IIF
 iif_marker_color = "rgba(46, 106, 53, 1)"  # Muted green for IIF
 
+global_max_y_row1 = 0
+global_max_y_row2 = 0
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -50,16 +52,18 @@ def calculate_iif(skills, diff, rels):
     return value.mean(axis=-1)
 
 
+
 fig = make_subplots(
     rows=2,
     cols=4,
     subplot_titles=DATASET_NAMES_SANITIZED + [""] * 4,
-    vertical_spacing=0.08,
+    vertical_spacing=0.13,
     horizontal_spacing=0.05,
     shared_yaxes=True,
     shared_xaxes=True,
     # row_heights=[0.6, 0.4],
 )
+fig.update_annotations(font_size=25)
 
 for i, dataset_name in enumerate(DATASET_NAMES, 1):
     # Generate points for smooth curves
@@ -86,6 +90,7 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
     model_y = model_kde(x_range)
     iif_y = iif_kde(x_range)
 
+
     if i == 1:
         global_max_y = max(max(human_y), max(model_y))
     else:
@@ -109,7 +114,7 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
         go.Scatter(
             x=x_range,
             y=model_y,
-            name="AI",
+            name="Model",
             line={"color": model_line_color},
             fill="tozeroy",
             fillcolor=model_fill_color,
@@ -126,7 +131,7 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
         y0=0,
         x1=human_mean,
         y1=max(human_y),
-        line={"color": human_marker_color, "width": 2, "dash": "dot"},
+        line={"color": human_marker_color, "width": 4, "dash": "dot"},
         row=1,
         col=i,
     )
@@ -136,7 +141,7 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
         y0=0,
         x1=model_mean,
         y1=max(model_y),
-        line={"color": model_marker_color, "width": 2, "dash": "dot"},
+        line={"color": model_marker_color, "width": 4, "dash": "dot"},
         row=1,
         col=i,
     )
@@ -146,7 +151,8 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
         go.Scatter(
             x=x_range,
             y=iif_y,
-            name="IIF(\u03b8)",
+            #name="IIF(\u03b8)",
+            name="IIF",
             line={"color": iif_line_color},
             fill="tozeroy",
             fillcolor=iif_fill_color,
@@ -183,7 +189,7 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
         y0=0,
         x1=margin_start,
         y1=4,
-        line={"color": "rgba(0, 0, 0, 0.8)", "width": 2, "dash": "dot"},
+        line={"color": "black", "width": 4, "dash": "dot"},
         row=2,
         col=i,
     )
@@ -193,7 +199,7 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
         y0=0,
         x1=margin_end,
         y1=4,
-        line={"color": "rgba(0, 0, 0, 0.8)", "width": 2, "dash": "dot"},
+        line={"color": "black", "width": 4, "dash": "dot"},
         row=2,
         col=i,
     )
@@ -203,57 +209,66 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
     fig.update_xaxes(
         row=2,
         col=i,
-        showticklabels=True,
+        showticklabels=False,
         title_text="Skill (\u03b8)",
-        title_font=dict(size=18),
+        title_font=dict(size=25),
+        tickfont=dict(size=22),
     )
     fig.update_yaxes(
         title_text="Skill Density" if i == 1 else None,
-        title_font=dict(size=18),
+        title_font=dict(size=25),
         row=1,
         col=i,
         showticklabels=True,
-        range=[0, global_max_y],
+        range=[0, 1.8],
     )
     fig.update_yaxes(
-        title_text="Item Info. Density (\u03b8)" if i == 1 else None,
-        title_font=dict(size=18),
+        #title_text="Item Info. Density (\u03b8)" if i == 1 else None,
+        title_text="Item Info. Density" if i == 1 else None,
+        title_font=dict(size=25),
         row=2,
         col=i,
         showticklabels=True,
+        tickfont=dict(size=20),
+        
     )
     fig.update_xaxes(
-        tickfont=dict(size=14),
+        tickfont=dict(size=20),
         dtick=1.0,
+        showticklabels=True,
     )
     fig.update_yaxes(
-        tickfont=dict(size=14),
+        tickfont=dict(size=20),
     )
 # Update layout
 fig.update_layout(
     template="ggplot2",
-    height=600,
+    height=750,
     width=1600,
     showlegend=True,
     margin=dict(l=10, r=10, t=60, b=10),
-    legend=dict(
-        orientation="v",
-        yanchor="middle",
-        y=0.5,
-        xanchor="left",
-        x=1.0,
-        font=dict(size=18),
-    ),
-    title=dict(
-        text="Skill Distribution and Item Information Function Across Datasets",
-        font=dict(size=24),
-        y=0.98,
-        x=0.5,
-        xanchor="center",
-        yanchor="top",
-    ),
+        legend=dict(
+            bgcolor="rgba(255,255,255,0.5)",
+            bordercolor="rgba(0,0,0,0.1)",
+            borderwidth=1,
+            orientation="h",  # Make the legend horizontal
+            yanchor="top",    # Anchor the legend to the top
+            y=-0.2,           # Position below the graph
+            xanchor="center",
+            x=0.5,
+            font=dict(size=25),
+        ),
+    # title=dict(
+    #     text="Skill Distribution and Item Information Function Across Datasets",
+    #     font=dict(size=24),
+    #     y=0.98,
+    #     x=0.5,
+    #     xanchor="center",
+    #     yanchor="top",
+    # ),
 )
 
 fig.show()
 fig.write_image("figs/skill_density_and_iif.pdf")
+
 # %%

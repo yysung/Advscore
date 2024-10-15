@@ -27,8 +27,13 @@ SKILL_COLS = funcs.SKILL_COLS
 REL_COLS = funcs.REL_COLS
 DIFF_COLS = funcs.DIFF_COLS
 
-DATASET_NAMES = ["advqa_combined", "fm2", "bamboogle", "trickme"]
-
+DATASET_NAMES = [  "trickme","advqa_combined","bamboogle", "fm2"]
+DATASET_NAMES_SANITIZED = [ "TRICKME","AdvQA", "BAMBOOGLE","FM2 "]
+line_colors = [  
+               '#1F77B4', 
+               '#C71585',
+               '#2CA02C',  
+               '#FF7F0E']  
 MODELS_BY_TIME = {
     "2020": ["DPR"],
     "2021": ["GPT-3-Instruct"],
@@ -260,6 +265,7 @@ def compute_percieved_expert_diff(
     return np.abs(dev).mean(axis=1)
 
 
+
 # %%
 
 
@@ -406,46 +412,75 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
         year_df, _ = get_all_advscore_per_year(
             year, agg="weighted_mean", cumulative=True
         )
-        year_df = year_df["advscore_v2"]
+        year_df = year_df["advscore_v3"]
         DF = pd.concat([DF, year_df], axis=1)
     DF.columns = YEARS
 
     # Create the plot
     fig = go.Figure()
 
+    
     # Plot cumulative data
-    for dataset_name in DF.index:
+    for i, dataset_name in enumerate(DF.index):
         fig.add_trace(
             go.Scatter(
                 x=YEARS,
                 y=DF.loc[dataset_name],
                 mode="lines+markers",
-                name=dataset_name,
-                line=dict(width=2),
-                marker=dict(size=8),
+                name=DATASET_NAMES_SANITIZED[i],
+                line=dict(width=2, color=line_colors[i]), 
+                marker=dict(size=12),
             )
         )
+        
+    fig.add_shape(
+        type="line",
+        x0=0, x1=1,  
+        y0=0, y1=0,
+        xref="paper",  
+        line=dict(color="dark gray", dash="dot", width=3), 
+    )
 
     # Update layout to match ggplot2 theme
     fig.update_layout(
         template="ggplot2",
-        font=dict(family="Arial", size=12),
+        font=dict(family="Arial", size=20),
         legend=dict(
             bgcolor="rgba(255,255,255,0.5)",
             bordercolor="rgba(0,0,0,0.1)",
             borderwidth=1,
+            orientation="h",  # Make the legend horizontal
+            yanchor="top",    # Anchor the legend to the top
+            y=-0.4,           # Position below the graph
+            xanchor="center",
+            x=0.5,
+            font=dict(size=20),
         ),
         plot_bgcolor="rgba(240,240,240,0.8)",
         paper_bgcolor="white",
-        margin=dict(l=60, r=30, t=80, b=60),
-        height=600,
-        width=800,
+        margin=dict(l=60, r=30, t=30, b=90),
+        height=400,
+        width=700,
         xaxis_title="Year",
-        yaxis_title="Cumulative Advscore",
+        yaxis_title="AdvScore",
+        xaxis=dict(
+            title_font=dict(size=30), 
+            tickfont=dict(size=25),    
+        ),
+        yaxis=dict(
+            title_font=dict(size=30),  
+            tickfont=dict(size=25),   
+        )
     )
 
     # Update axes
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="rgba(0,0,0,0.1)")
+    fig.update_xaxes(
+        showgrid=True,
+        gridwidth=1,
+        gridcolor="rgba(0,0,0,0.1)",
+        title_standoff=15,
+        
+    )
     fig.update_yaxes(
         showgrid=True,
         gridwidth=1,
@@ -453,19 +488,20 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
         title_standoff=15,
     )
 
-    # Add a main title
-    fig.add_annotation(
-        text="Cumulative Advscore Over Time for Different Datasets",
-        xref="paper",
-        yref="paper",
-        x=0.5,
-        y=1.05,
-        showarrow=False,
-        font=dict(size=18, family="Arial", color="black"),
-    )
+    # # Add a main title
+    # fig.add_annotation(
+    #     text="Cumulative Advscore Over Time for Different Datasets",
+    #     xref="paper",
+    #     yref="paper",
+    #     x=0.5,
+    #     y=1.05,
+    #     showarrow=False,
+    #     font=dict(size=18, family="Arial", color="black"),
+    # )
 
     # Show the plot
     fig.show()
+    fig.write_image("./figs/cumulative_advscore.pdf")
 
 
 # %%

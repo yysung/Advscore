@@ -33,7 +33,7 @@ advtype_feat_df = features_df[adv_feat_cols]
 features_df = pd.concat([advtype_feat_df, features_df[cat_feat_cols]], axis=1)
 # %%
 
-labels_df = pd.read_csv("data/AdvQA_scores.csv", index_col=0)
+labels_df = pd.read_csv("data/advqa_combined_scores.csv", index_col=0)
 labels_df["adv_score"] = labels_df["margin"] * (1 + labels_df["kappa"])
 labels_df["kappa_bin"] = (labels_df["kappa"] > 0.51).astype(float)
 labels_df["margin_bin"] = (labels_df["margin"] > labels_df["margin"].median()).astype(
@@ -82,21 +82,20 @@ print("Model fit:", fit)
 # results_df_adv = results_df_adv[results_df_adv["sig"] != ""]
 results_df_adv
 # %%
-fit, results_df_advscore = logreg.linear_regression_with_significance(
-    features_df, labels_df["adv_score"], alpha=0.0001, fit_intercept=False
-)
+# fit, results_df_advscore = logreg.linear_regression_with_significance(
+#     features_df, labels_df["adv_score"], alpha=0.0001, fit_intercept=False
+# )
 
-print("Model fit:", fit)
-results_df_advscore = results_df_advscore[results_df_advscore["coef"] != 0]
-results_df_advscore
+# print("Model fit:", fit)
+# results_df_advscore = results_df_advscore[results_df_advscore["coef"] != 0]
+# results_df_advscore
 # %%
-fit, results_df_margin = logreg.log_regression_analysis(
-    quad_feats_df, labels_df["margin_bin"], C=1.0
-)
-results_df_margin = results_df_margin[results_df_margin["sig"] != ""]
+# fit, results_df_margin = logreg.log_regression_analysis(
+#     quad_feats_df, labels_df["margin_bin"], C=1.0
+# )
+# results_df_margin = results_df_margin[results_df_margin["sig"] != ""]
 
-print("Model fit:", fit)
-results_df_kappa
+# print("Model fit:", fit)
 
 # %%
 
@@ -162,7 +161,7 @@ fig.update_layout(
     template="ggplot2",
     font={"size": 12},
     margin={"l": 10, "r": 10, "t": 30, "b": 10},
-    height=750,
+    height=500,
     width=700,
     # title_text="Coefficients of Logistic Regression for Categories and Adversarial Types",
     # title_font={"size": 16},
@@ -177,14 +176,15 @@ fig.update_xaxes(
     # title_text="Coefficient Value",
 )
 fig.update_xaxes(
-    title_font={"size": 18},
-    title_text="Logistic Regression Feature Coefficients",
+    title_font={"size": 25},
+    title_text="Logistic Regression Coefficients",
     row=2,
 )
+
 fig.update_yaxes(
     showgrid=True,
     gridwidth=1,
-    tickfont={"size": 18, "style": "italic"},
+    tickfont={"size": 18},
     # autorange="reversed",
 )
 
@@ -226,9 +226,18 @@ print(tabulate(table_data, headers=headers, tablefmt="grid", floatfmt=".4f"))
 
 # %%
 labels_df["adv_score"] = labels_df["margin"] * (1 + labels_df["kappa"])
+import matplotlib.pyplot as plt
+
 plt.hist(labels_df["adv_score"])
 
 # %%
+table_data = []
+for feat_name in features_df.columns:
+    idx = features_df[features_df[feat_name] == 1].index
+    metrics = margin_df.loc[idx].describe()["margin"]
+    table_data.append([feat_name, metrics["count"]])
 
+headers = ["Feature", "Count"]
+print(tabulate(table_data, headers=headers, tablefmt="grid", floatfmt=".4f"))
 
 # %%
