@@ -27,13 +27,9 @@ SKILL_COLS = funcs.SKILL_COLS
 REL_COLS = funcs.REL_COLS
 DIFF_COLS = funcs.DIFF_COLS
 
-DATASET_NAMES = [  "trickme","advqa_combined","bamboogle", "fm2"]
-DATASET_NAMES_SANITIZED = [ "TRICKME","AdvQA", "BAMBOOGLE","FM2 "]
-line_colors = [  
-               '#1F77B4', 
-               '#C71585',
-               '#2CA02C',  
-               '#FF7F0E']  
+DATASET_NAMES = ["advqa_combined", "trickme", "fm2", "bamboogle"]
+DATASET_NAMES_SANITIZED = ["AdvQA", "TrickMe", "FM2", "BAMBOOGLE"]
+line_colors = ["#1F77B4", "#C71585", "#2CA02C", "#FF7F0E"]
 MODELS_BY_TIME = {
     "2020": ["DPR"],
     "2021": ["GPT-3-Instruct"],
@@ -42,11 +38,9 @@ MODELS_BY_TIME = {
         "Mistral-0.1-instruct",
         "GPT-4",
         "Llama-2-7b-chat",
-        "Llama-2-70b-chat",
+        "llama-2-70b-chat",
     ],
     "2024": [
-        "Llama-2-7b-chat",
-        "Llama-2-70b-chat",
         "Llama-3-8b-instruct",
         "Llama-3-70b-instruct",
         "rag-command-r-plus",
@@ -193,15 +187,17 @@ def create_avg_prob(
         ai_this_year = models_by_time[ai_year]
         skills_subset = skills_subset[skills_subset["subject_id"].isin(ai_this_year)]
 
+    print("# AI models in this year:", len(skills_subset))
+
     if agg == "max":
         skills_subset = skills_subset.loc[skills_subset["eff_skill"].idxmax()]
-        max_skill = skills_subset[SKILL_COLS].values
+        rep_skill = skills_subset[SKILL_COLS].values
 
     if agg == "top5":
         skills_subset = skills_subset.sort_values(by="eff_skill", ascending=False).head(
             5
         )
-        max_skill = skills_subset[SKILL_COLS].values
+        rep_skill = skills_subset[SKILL_COLS].values
 
     if agg == "best_mean":
         # Select the row where full_skill is just greater than the mean
@@ -211,31 +207,39 @@ def create_avg_prob(
         skills_subset = skills_subset.loc[
             (skills_subset["eff_skill"] - mean_skill).abs().idxmin()
         ]
-        max_skill = skills_subset[SKILL_COLS].values
+        rep_skill = skills_subset[SKILL_COLS].values
 
     if agg == "mean":
-        skills = skills_subset[SKILL_COLS].values
-        mean_skill = skills.mean(axis=0)
-        # print("Mean skills:", mean_skill.shape)
-        max_skill = mean_skill
+        rep_skill = skills_subset[SKILL_COLS].values.mean(axis=0)
 
     if agg == "weighted_mean":
         p_star = create_avg_prob_subject(skills_subset, questions_df)
         p_star = skills_subset["accuracy"].values + 1e-6
         skills = skills_subset[SKILL_COLS].values
         mean_skill = (skills * p_star[:, None]).sum(axis=0) / p_star.sum()
-        max_skill = mean_skill
+        rep_skill = mean_skill
 
     if agg == "t25_mean":
         # Select the top 25%
         skills_subset = skills_subset.sort_values(by="eff_skill", ascending=False).head(
             int(len(skills_subset) * 0.25)
         )
-        max_skill = skills_subset[SKILL_COLS].values
+        rep_skill = skills_subset[SKILL_COLS].values
 
+    if agg == "experts_mean":
+        # Select such that skill > mean + std
+        skills = skills_subset[SKILL_COLS].values
+        mean_skill = skills.mean(axis=0)
+        std_skill = skills.std(axis=0)
+        expert_skill_threshold = mean_skill
+        skills_subset = skills_subset[(skills >= expert_skill_threshold).all(axis=1)]
+        print("Skilled agents:", len(skills_subset))
+        rep_skill = skills_subset[SKILL_COLS].values.mean(axis=0)
+
+    print(f"{subject_type} rep skill:", rep_skill)
     diff = questions_df[DIFF_COLS].values  # (n_items, n_dim)
     rels = questions_df[REL_COLS].values  # (n_items, n_dim)
-    probs = irt_prob_func(max_skill, diff, rels)
+    probs = irt_prob_func(rep_skill, diff, rels)
     return probs.mean(), probs.std(), probs
 
 
@@ -263,7 +267,6 @@ def compute_percieved_expert_diff(
     expert_probs = irt_prob_func(expert_skills, diff, rels).T
     dev = expert_probs - expert_probs.mean(axis=1, keepdims=True)
     return np.abs(dev).mean(axis=1)
-
 
 
 # %%
@@ -321,13 +324,16 @@ def compute_advscore_v3(margin, kappa, delta):
     return margin * (1 + kappa) / (1 + delta)
 
 
-def get_advscore_df(name, year, agg="weighted_mean", cumulative=False, is_crowd=True):
+def get_advscore_df(name, year, agg="weighted_mean", cumulative=True, is_crowd=True):
+    print("Dataset:", name, "Crowd:", is_crowd)
     dataframe_dict = load_dataframe_dict(name)
-    human_prob_mean, human_std, human_probs = create_avg_prob(
-        dataframe_dict, "human", ai_year=year, agg=agg, cumulative=cumulative
-    )
     ai_prob_mean, ai_std, ai_probs = create_avg_prob(
         dataframe_dict, "ai", ai_year=year, agg=agg, cumulative=cumulative
+    )
+    human_agg = "mean" if agg == "experts_mean" and (not is_crowd) else agg
+    print("Human agg:", human_agg, "AI agg:", agg)
+    human_prob_mean, human_std, human_probs = create_avg_prob(
+        dataframe_dict, "human", ai_year=year, agg=human_agg, cumulative=cumulative
     )
     margin_probs = human_probs - ai_probs
     kappa_iif_values = get_kappa_iif(dataframe_dict)
@@ -353,7 +359,7 @@ def get_advscore_df(name, year, agg="weighted_mean", cumulative=False, is_crowd=
 
     # print(tabulate(data, headers=["Metric", "Value"], tablefmt="grid"))
     # print("__________________________________")
-    print(mean_margin_prob.shape, mean_kappa_iif.shape, mean_delta.shape)
+    # print(mean_margin_prob.shape, mean_kappa_iif.shape, mean_delta.shape)
     df = pd.DataFrame(
         {
             "mean_margin": mean_margin_prob,
@@ -362,12 +368,8 @@ def get_advscore_df(name, year, agg="weighted_mean", cumulative=False, is_crowd=
         },
         index=[name],
     )
-    adv_scores_v1 = compute_advscore_v1(margin_probs, kappa_iif_values, delta_h_values)
-    adv_scores_v2 = compute_advscore_v2(margin_probs, kappa_iif_values, delta_h_values)
-    adv_scores_v3 = compute_advscore_v3(margin_probs, kappa_iif_values, delta_h_values)
-    df["advscore_v1"] = adv_scores_v1.mean()
-    df["advscore_v2"] = adv_scores_v2.mean()
-    df["advscore_v3"] = adv_scores_v3.mean()
+    adv_scores = compute_advscore_v3(margin_probs, kappa_iif_values, delta_h_values)
+    df["advscore"] = adv_scores.mean()
     return df, margin_probs, kappa_iif_values
 
 
@@ -376,7 +378,6 @@ def get_all_advscore_per_year(
 ):
     df_list = []
     for name in DATASET_NAMES:
-        print("Dataset:", name)
         is_crowd = name != "trickme"
         df, margin_probs, kappa_values = get_advscore_df(
             name, year, agg=agg, cumulative=cumulative, is_crowd=is_crowd
@@ -388,20 +389,19 @@ def get_all_advscore_per_year(
 
 
 # %%
+table1_df, _ = get_all_advscore_per_year("2024", agg="experts_mean", cumulative=True)
+print(table1_df.to_string(float_format="{:.2f}".format))
+
+# %%
 for dataset_name in DATASET_NAMES:
     _, margin_probs, kappa_values = get_advscore_df(
-        dataset_name, "2024", agg="weighted_mean", cumulative=True
+        dataset_name, "2024", agg="experts_mean", cumulative=True
     )
     print(margin_probs.shape)
     plt.hist(margin_probs, bins=20, ec="black")
     plt.hist(kappa_values, bins=20, ec="black")
     scores_df = pd.DataFrame({"margin": margin_probs, "kappa": kappa_values})
     scores_df.to_csv(f"data/{dataset_name}_scores.csv")
-
-# %%
-# df = get_advscore_df("trickme", "2024", agg="weighted_mean", cumulative=True)
-table1_df, _ = get_all_advscore_per_year("2024", agg="weighted_mean", cumulative=True)
-table1_df
 
 
 # %%
@@ -410,16 +410,20 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
     DF = pd.DataFrame()
     for year in YEARS:
         year_df, _ = get_all_advscore_per_year(
-            year, agg="weighted_mean", cumulative=True
+            year, agg="experts_mean", cumulative=True
         )
-        year_df = year_df["advscore_v3"]
+        year_df = year_df["advscore"]
         DF = pd.concat([DF, year_df], axis=1)
     DF.columns = YEARS
 
     # Create the plot
     fig = go.Figure()
 
-    
+    # Set color palette to Set2
+    # color_palette = sns.color_palette("Set2", n_colors=len(DATASET_NAMES))
+    color_palette = line_colors
+
+    # color pa
     # Plot cumulative data
     for i, dataset_name in enumerate(DF.index):
         fig.add_trace(
@@ -428,17 +432,19 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
                 y=DF.loc[dataset_name],
                 mode="lines+markers",
                 name=DATASET_NAMES_SANITIZED[i],
-                line=dict(width=2, color=line_colors[i]), 
-                marker=dict(size=12),
+                line={"width": 2, "color": color_palette[i]},
+                marker={"size": 10, "color": color_palette[i]},
             )
         )
-        
+
     fig.add_shape(
         type="line",
-        x0=0, x1=1,  
-        y0=0, y1=0,
-        xref="paper",  
-        line=dict(color="dark gray", dash="dot", width=3), 
+        x0=0,
+        x1=1,
+        y0=0,
+        y1=0,
+        xref="paper",
+        line=dict(color="dark gray", dash="dot", width=3),
     )
 
     # Update layout to match ggplot2 theme
@@ -446,31 +452,31 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
         template="ggplot2",
         font=dict(family="Arial", size=20),
         legend=dict(
-            bgcolor="rgba(255,255,255,0.5)",
+            bgcolor="rgba(255,255,255,1.0)",
             bordercolor="rgba(0,0,0,0.1)",
             borderwidth=1,
             orientation="h",  # Make the legend horizontal
-            yanchor="top",    # Anchor the legend to the top
-            y=-0.4,           # Position below the graph
-            xanchor="center",
-            x=0.5,
+            yanchor="top",  # Anchor the legend to the top
+            y=1.0,  # Position below the graph
+            xanchor="right",
+            x=1.0,
             font=dict(size=20),
         ),
         plot_bgcolor="rgba(240,240,240,0.8)",
         paper_bgcolor="white",
-        margin=dict(l=60, r=30, t=30, b=90),
+        margin=dict(l=60, r=10, t=10, b=90),
         height=400,
         width=700,
         xaxis_title="Year",
         yaxis_title="AdvScore",
         xaxis=dict(
-            title_font=dict(size=30), 
-            tickfont=dict(size=25),    
+            title_font=dict(size=30),
+            tickfont=dict(size=25),
         ),
         yaxis=dict(
-            title_font=dict(size=30),  
-            tickfont=dict(size=25),   
-        )
+            title_font=dict(size=30),
+            tickfont=dict(size=25),
+        ),
     )
 
     # Update axes
@@ -479,7 +485,6 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
         gridwidth=1,
         gridcolor="rgba(0,0,0,0.1)",
         title_standoff=15,
-        
     )
     fig.update_yaxes(
         showgrid=True,
@@ -522,7 +527,6 @@ skills_df["subject_type"] = skills_df["subject_id"].map(
     if x.isalpha()
     else "crowd"
 )
-print(skills_df)
 # scatter plot for skills_df
 plt.figure(figsize=(6, 6))
 sns.scatterplot(
