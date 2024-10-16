@@ -75,11 +75,11 @@ print(quad_feats_df.columns)
 importlib.reload(logreg)
 
 fit, results_df_adv = logreg.log_regression_analysis(
-    features_df, labels_df["adv_bin"], C=10.0
+    features_df, labels_df["adv_bin"], C=5.0
 )
 
 print("Model fit:", fit)
-# results_df_adv = results_df_adv[results_df_adv["sig"] != ""]
+results_df_adv = results_df_adv[results_df_adv["coef"] != 0]
 results_df_adv
 # %%
 # fit, results_df_advscore = logreg.linear_regression_with_significance(
@@ -99,15 +99,15 @@ results_df_adv
 
 # %%
 
-_, results_df_kappa = logreg.log_regression_analysis(features_df, labels_df["kappa"])
-_, results_df_margin = logreg.log_regression_analysis(features_df, labels_df["margin"])
+# _, results_df_kappa = logreg.log_regression_analysis(features_df, labels_df["kappa"])
+# _, results_df_margin = logreg.log_regression_analysis(features_df, labels_df["margin"])
 
-results_df_kappa[results_df_kappa["sig"] != ""]
-results_df_margin[results_df_margin["sig"] != ""]
+# results_df_kappa[results_df_kappa["sig"] != ""]
+# results_df_margin[results_df_margin["sig"] != ""]
 
-# Create dataframes for each output label and input feature types
-kappa_df = results_df_kappa["coef"]
-margin_df = results_df_margin["coef"]
+# # Create dataframes for each output label and input feature types
+# kappa_df = results_df_kappa["coef"]
+# margin_df = results_df_margin["coef"]
 
 # %%
 
@@ -145,8 +145,8 @@ fig = make_subplots(
     rows=2,
     cols=1,
     subplot_titles=(
-        "<b><span style='font-size: 18px;'>Categories</span></b>",
-        "<b><span style='font-size: 18px;'>Adversarial Tactics</span></b>",
+        "<b><span style='font-size: 18px; font-family: Roboto;'>Categories</span></b>",
+        "<b><span style='font-size: 18px; font-family: Roboto;'>Adversarial Tactics</span></b>",
     ),
     horizontal_spacing=0.1,
     vertical_spacing=0.1,
@@ -159,24 +159,21 @@ fig.add_trace(create_bar_subplot(advtype_df["coef"], "Advtype"), row=2, col=1)
 # Update layout to match ggplot2 theme and reflect horizontal layout
 fig.update_layout(
     template="ggplot2",
-    font={"size": 12},
+    font={"size": 12, "family": "Roboto"},
     margin={"l": 10, "r": 10, "t": 30, "b": 10},
     height=500,
     width=700,
-    # title_text="Coefficients of Logistic Regression for Categories and Adversarial Types",
-    # title_font={"size": 16},
 )
 
 # Update axes for horizontal layout
 fig.update_xaxes(
     showgrid=True,
     gridwidth=1,
-    showticklabels=True,
-    tickfont={"size": 14},
-    # title_text="Coefficient Value",
+    dtick=0.25,
+    tickfont={"size": 14, "family": "Roboto"},
 )
 fig.update_xaxes(
-    title_font={"size": 25},
+    title_font={"size": 25, "family": "Roboto"},
     title_text="Logistic Regression Coefficients",
     row=2,
 )
@@ -184,8 +181,7 @@ fig.update_xaxes(
 fig.update_yaxes(
     showgrid=True,
     gridwidth=1,
-    tickfont={"size": 18},
-    # autorange="reversed",
+    tickfont={"size": 18, "family": "Roboto"},
 )
 
 # Show the plot

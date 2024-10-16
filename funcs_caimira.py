@@ -10,7 +10,7 @@ DIFF_COLS = ["dif_0", "dif_1"]
 
 DATASET_NAMES = ["advqa_combined", "fm2", "bamboogle", "trickme"]
 
-CKPT_DIR = "/fs/clip-quiz/mgor/qa-difficulty/outputs/irt/model_ckpts"
+CKPT_DIR = "<ckpt_dir>/"
 
 exp_names = {
     "advqa_combined": "caimira-advqa_combined-2-dim_diff-kernel_imp-kernel_aqcevce-emb-advqa-qar-cohere-embed-v3-classification-embed_fit-imp_Adam-lr=5e-03_c-reg-skill=1e-5-diff=1e-5-imp=1e-6_sampler=none-w=4.0_bs=512",

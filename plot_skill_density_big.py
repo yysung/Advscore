@@ -1,6 +1,4 @@
 # %%
-from turtle import bgcolor
-
 import numpy as np
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
@@ -226,7 +224,7 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
         go.Scatter(
             x=x_range,
             y=iif_y,
-            name="IIF",
+            name="Item Information Function (IIF)",
             line={"color": iif_line_color},
             fill="tozeroy",
             fillcolor=iif_fill_color,
@@ -377,49 +375,55 @@ for i, dataset_name in enumerate(DATASET_NAMES, 1):
     add_horizontal_line(p_value_start, human_marker_color, 2, PROB_ROW, i)
     add_horizontal_line(p_value_end, model_marker_color, 2, PROB_ROW, i)
 
-# Update axes labels
-fig.update_xaxes(
-    row=IIF_ROW,
-    col=i,
-    showticklabels=True,
-    title_text="Skill (\u03b8)",
-    title_font=dict(size=25),
-    tickfont=dict(size=22, family="Roboto"),
-)
+    # Update axes labels
+    fig.update_xaxes(
+        row=IIF_ROW,
+        col=i,
+        showticklabels=True,
+        title_text="Skill (\u03b8)",
+        title_font=dict(size=25),
+        tickfont=dict(size=22, family="Roboto"),
+    )
+    fig.update_yaxes(
+        title_text="Skill Density" if i == 1 else None,
+        title_font=dict(size=25),
+        row=SKILL_ROW,
+        col=i,
+        range=[0, global_max_y],
+        tickfont=dict(family="Roboto"),
+    )
+    fig.update_yaxes(
+        title_text=f"IIF({theta_unicode})" if i == 1 else None,
+        title_font=dict(size=25),
+        row=IIF_ROW,
+        col=i,
+        tickfont=dict(size=20, family="Roboto"),
+        range=[0, 3],  # Set the yaxes max of iif to 3
+    )
+    fig.update_yaxes(
+        title_text=f"{p_2pl_unicode}" if i == 1 else None,
+        title_font=dict(size=25),
+        row=PROB_ROW,
+        col=i,
+        tickfont=dict(size=20, family="Roboto"),
+        range=[0, 1],
+    )
+
+
 fig.update_xaxes(
     tickfont=dict(size=20, family="Roboto"),
     dtick=1.0,
 )
+
 fig.update_yaxes(
-    title_text="Skill Density" if i == 1 else None,
-    title_font=dict(size=25),
+    dtick=1.0,
     row=SKILL_ROW,
-    col=i,
     range=[0, global_max_y],
-    tickfont=dict(family="Roboto"),
 )
-fig.update_yaxes(
-    title_text="Item Info." if i == 1 else None,
-    title_font=dict(size=25),
-    row=IIF_ROW,
-    col=i,
-    tickfont=dict(size=20, family="Roboto"),
-    range=[0, 3],  # Set the yaxes max of iif to 3
-)
-fig.update_yaxes(
-    title_text=f"Probability {p_2pl_unicode}" if i == 1 else None,
-    title_font=dict(size=25),
-    row=PROB_ROW,
-    col=i,
-    tickfont=dict(size=20, family="Roboto"),
-    range=[0, 1],
-)
-fig.update_yaxes(dtick=1.0, row=SKILL_ROW)
 fig.update_yaxes(
     showticklabels=True,
     tickfont=dict(size=20, family="Roboto"),
 )
-
 # Update layout
 fig.update_layout(
     template="ggplot2",

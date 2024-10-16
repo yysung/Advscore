@@ -28,7 +28,7 @@ REL_COLS = funcs.REL_COLS
 DIFF_COLS = funcs.DIFF_COLS
 
 DATASET_NAMES = ["advqa_combined", "trickme", "fm2", "bamboogle"]
-DATASET_NAMES_SANITIZED = ["AdvQA", "TrickMe", "FM2", "BAMBOOGLE"]
+DATASET_NAMES_SANITIZED = ["AdvQA", "TrickMe", "FM2", "Bamboogle"]
 line_colors = ["#1F77B4", "#C71585", "#2CA02C", "#FF7F0E"]
 MODELS_BY_TIME = {
     "2020": ["DPR"],
@@ -444,13 +444,13 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
         y0=0,
         y1=0,
         xref="paper",
-        line=dict(color="dark gray", dash="dot", width=3),
+        line=dict(color="red", dash="dash", width=2),
     )
 
     # Update layout to match ggplot2 theme
     fig.update_layout(
         template="ggplot2",
-        font=dict(family="Arial", size=20),
+        font=dict(family="Roboto", size=20),
         legend=dict(
             bgcolor="rgba(255,255,255,1.0)",
             bordercolor="rgba(0,0,0,0.1)",
@@ -460,22 +460,22 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
             y=1.0,  # Position below the graph
             xanchor="right",
             x=1.0,
-            font=dict(size=20),
+            font=dict(size=20, family="Roboto"),
         ),
-        plot_bgcolor="rgba(240,240,240,0.8)",
+        # plot_bgcolor="rgba(240,240,240,0.9)",
         paper_bgcolor="white",
         margin=dict(l=60, r=10, t=10, b=90),
-        height=400,
+        height=350,
         width=700,
         xaxis_title="Year",
         yaxis_title="AdvScore",
         xaxis=dict(
-            title_font=dict(size=30),
-            tickfont=dict(size=25),
+            title_font=dict(size=30, family="Roboto"),
+            tickfont=dict(size=25, family="Roboto"),
         ),
         yaxis=dict(
-            title_font=dict(size=30),
-            tickfont=dict(size=25),
+            title_font=dict(size=30, family="Roboto"),
+            tickfont=dict(size=25, family="Roboto"),
         ),
     )
 
@@ -483,13 +483,15 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
     fig.update_xaxes(
         showgrid=True,
         gridwidth=1,
-        gridcolor="rgba(0,0,0,0.1)",
+        # gridcolor="rgba(0,0,0,0.1)",
         title_standoff=15,
     )
     fig.update_yaxes(
         showgrid=True,
+        dtick=0.2,
+        range=[-0.3, 1.19],
         gridwidth=1,
-        gridcolor="rgba(0,0,0,0.1)",
+        # gridcolor="rgba(0,0,0,0.1)",
         title_standoff=15,
     )
 
@@ -509,9 +511,10 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
     fig.write_image("./figs/cumulative_advscore.pdf")
 
 
+plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year)
 # %%
 # Call the function
-plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year)
+
 
 # %%
 

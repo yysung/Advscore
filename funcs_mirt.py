@@ -18,7 +18,7 @@ DIFF_COLS = ["diff"]
 #     "trickme": "mirt-trickme-2-dim_diff-values_imp-values_fit-imp_Adam-lr=1e-02_c-reg-skill=1e-5-diff=1e-5-imp=1e-6_bs=512",
 # }
 
-CKPT_DIR = "/fs/clip-quiz/mgor/qa-difficulty/outputs/irt/model_ckpts"
+CKPT_DIR = "<ckpt_dir>/"
 # 1 dim exp_names
 exp_names = {
     "advqa_combined": "mirt-advqa_combined-1-dim_diff-values_imp-values_fit-imp_Adam-lr=5e-03_c-reg-skill=1e-5-diff=1e-5-imp=1e-6_sampler=none-w=7.0_bs=512",
