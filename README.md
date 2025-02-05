@@ -43,8 +43,6 @@ The **AdvQA** dataset is available in the **`data/`** directory.
 It is also uploaded to **Hugging Face** and can be accessed here:  
 [AdvQA Dataset](https://huggingface.co/datasets/umdclip/AdvQA/tree/main).  
 
----
-
 ## **Feature Analysis on Adversarial Tactics**  
 We conduct a **feature analysis** by fitting a **logistic regression model** on annotation types of **AdvQA**.  
 
