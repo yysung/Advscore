@@ -38,8 +38,9 @@ You can compute **AdvScore** by calculating each parameter that contributes to t
 python comp_advscore.py
 ```
 
-## **A New QA Benchmark: AdvQA**  
-The **AdvQA** dataset is available in the **`data/`** directory.  
+## **A New adversarial QA Benchmark: AdvQA**  
+Incentivized by AdvScore, we recruit experts to write questions that are adversarial (difficult for humans but not for models).
+This **AdvQA** dataset is available in the **`data/Advqa_text.csv`** .  
 It is also uploaded to **Hugging Face** and can be accessed here:  
 [AdvQA Dataset](https://huggingface.co/datasets/umdclip/AdvQA/tree/main).  
 
