@@ -70,7 +70,7 @@ python logreg.py
 > - **Person embedding layer** representing person abilities (**θⱼ**)  
 > - **Sigmoid output layer** computing the probability of a correct response  
 >  
-> ** Total parameters:** **2N + M**, where:  
+> Total parameters: **2N + M**, where:  
 > - **N** = number of items  
 > - **M** = number of subjects  
 > - Includes **N difficulty parameters**, **N discrimination parameters**, and **M ability parameters**  
