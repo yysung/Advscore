@@ -41,7 +41,7 @@ python comp_advscore.py
 ## **A New Adversarial QA Benchmark: AdvQA**  
 Incentivized by AdvScore, we recruit experts to write questions that are adversarial (difficult for humans but not for models).
 This **AdvQA** dataset is available in the **`data/Advqa_text.csv`** .  
-It is also uploaded to **Hugging Face** and can be accessed here:  
+It is also uploaded to Hugging Face and can be accessed here:  
 [AdvQA Dataset](https://huggingface.co/datasets/umdclip/AdvQA/tree/main).  
 
 ## **Feature Analysis on Adversarial Tactics**  
@@ -56,3 +56,5 @@ We conduct a **feature analysis** by fitting a **logistic regression model** on 
 ```
 python logreg.py
 ```
+
+
