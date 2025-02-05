@@ -15,7 +15,7 @@ If you use this work, please cite using the following BibTeX:
   year      = {2025},
   publisher = {Association for Computational Linguistics}
 }
-
+```
 ---
 
 ## **Installation**  
