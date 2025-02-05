@@ -1,4 +1,4 @@
-# 🛠 ** AdvScore: Assessing the True Adversarialness of Benchmarks**  
+# 🛠**AdvScore: Assessing the True Adversarialness of Benchmarks**  
 This repository contains the data and code for the **AdvScore** paper, accepted as a **NAACL 2025 Main Paper🚀**.  
 
 AdvScore is a **human-centered metric** designed to evaluate the **true adversarialness** of benchmarks by capturing the varying abilities of both models and humans. Additionally, it helps identify poor-quality examples in adversarial datasets.  
