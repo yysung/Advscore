@@ -14,10 +14,10 @@ pip install -r requirements.txt
 ##  ✅ **Train IRT Models**  
 AdvScore relies on **Item Response Theory (IRT)** models. You have two options:  
 
-###  ✅ **Train Your Own IRT Model**  
+### **Train Your Own IRT Model**  
 - Use [this repository](https://github.com/maharshi95/neural-irt) to train an IRT or MIRT model.  
 
-###  ✅ **Download Pretrained IRT Models**  
+### **Download Pretrained IRT Models**  
 - To replicate our experiments, download the pretrained models for each dataset from [this Google Drive link](https://drive.google.com/drive/folders/18crWrx9LkxPAeYUOHQEVuj8mV1eFbSTi?usp=sharing).  
 
 Once downloaded, update **`CKPT_DIR`** in `funcs_mirt.py` with the path to your pretrained models.  
@@ -25,20 +25,20 @@ Once downloaded, update **`CKPT_DIR`** in `funcs_mirt.py` with the path to your 
 ##  ✅ **Compute AdvScore**  
 To compute **AdvScore**, you need to collect **LLM and human subject responses** for the adversarial dataset.  
 
-###  ✅ **Dataset Requirements**  
+### **Dataset Requirements**  
 - The experimental datasets are located in the **`data/`** directory.  
 - Files ending in `_text.csv` contain model and human binary correctness for each question.  
   - **Models** are labeled with their real names.  
   - **Human teams** are labeled with numbers or uppercase/lowercase alphabets.  
 
-###  ✅ **Run AdvScore Computation**  
+### **Run AdvScore Computation**  
 You can compute **AdvScore** by calculating each parameter that contributes to the score using the following command:  
 
 ```
 python comp_advscore.py
 ```
 
-## **A New Adversarial QA Benchmark: AdvQA**  
+##  ✅ **A New Adversarial QA Benchmark: AdvQA**  
 Incentivized by AdvScore, we recruit experts to write questions that are adversarial (difficult for humans but not for models).
 This **AdvQA** dataset is available in the **`data/Advqa_text.csv`** .  
 It is also uploaded to Hugging Face and can be accessed here:  
