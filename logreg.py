@@ -47,26 +47,13 @@ def log_regression_analysis(
     model.fit(X_train, y_train)
 
     # Calculate matrix of predicted class probabilities.
-    # Check resLogit.classes_ to make sure that sklearn ordered your classes as expected
     predProbs = model.predict_proba(X_train)
-    # # Design matrix -- add column of 1's at the beginning of your X_train matrix
-    # X_design = np.hstack([np.ones((X_train.shape[0], 1)), X_train])
+    # Design matrix -- add column of 1's at the beginning of your X_train matrix
     X_design = X_train.values
-
-    # Initiate matrix of 0's, fill diagonal with each predicted observation's variance
-    # V = np.diagflat(np.product(predProbs, axis=1))
-
-    # Use np.prod instead of np.product
     V = np.diagflat(np.prod(predProbs, axis=1))
 
-    # Covariance matrix
     covLogit = np.linalg.inv(X_design.T @ V @ X_design)
-    # covLogit = np.linalg.inv(np.dot(np.dot(X_design.T, V), X_design))
-    # print("Covariance matrix: ", covLogit)
-
     # Standard errors
-    # print("Standard errors: ", np.sqrt(np.diag(covLogit)))
-
     # Wald statistic (coefficient / s.e.) ^ 2
     diag = np.maximum(np.diag(covLogit), 0)
     std_err = np.sqrt(diag)
@@ -104,17 +91,12 @@ def linear_regression_with_significance(
     X = df_inputs
     y = labels
 
-    # Initialize and fit the Lasso model
+    # Lasso 
     model = Lasso(alpha=alpha, random_state=0, fit_intercept=fit_intercept)
     model.fit(X, y)
 
-    # Calculate model fit
     model_fit = model.score(X, y)
-
-    # Extract coefficients
     coefficients = model.coef_
-
-    # Calculate standard errors
     n = len(y)
     p = X.shape[1]
     residuals = y - model.predict(X)

@@ -1,6 +1,5 @@
 # %%
 import os.path as osp
-
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
@@ -16,10 +15,7 @@ from tabulate import tabulate
 import funcs_caimira
 import funcs_mirt
 
-# Comment/uncomment to switch between methods
 funcs = funcs_mirt
-# funcs = funcs_caimira
-
 # Load the functions and constants from the selected irt method
 load_dataframe_dict = funcs.load_dataframe_dict
 irt_logit_func = funcs.irt_logit_func
@@ -146,7 +142,6 @@ def exp_normalize(x, k=1):
 def get_kappa_aggdisc(dataframe_dict):
     questions_df = dataframe_dict["questions"]
     print(questions_df.columns)
-    # TODO: Check if this is correct
     agg_disc = questions_df[REL_COLS].values
     return exp_normalize(agg_disc)
 
@@ -416,14 +411,9 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
         DF = pd.concat([DF, year_df], axis=1)
     DF.columns = YEARS
 
-    # Create the plot
     fig = go.Figure()
-
-    # Set color palette to Set2
-    # color_palette = sns.color_palette("Set2", n_colors=len(DATASET_NAMES))
     color_palette = line_colors
 
-    # color pa
     # Plot cumulative data
     for i, dataset_name in enumerate(DF.index):
         fig.add_trace(
@@ -446,8 +436,6 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
         xref="paper",
         line=dict(color="red", dash="dash", width=2),
     )
-
-    # Update layout to match ggplot2 theme
     fig.update_layout(
         template="ggplot2",
         font=dict(family="Roboto", size=20),
@@ -455,14 +443,14 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
             bgcolor="rgba(255,255,255,1.0)",
             bordercolor="rgba(0,0,0,0.1)",
             borderwidth=1,
-            orientation="h",  # Make the legend horizontal
-            yanchor="top",  # Anchor the legend to the top
-            y=1.0,  # Position below the graph
+            orientation="h",  
+            yanchor="top", 
+            y=1.0, 
             xanchor="right",
             x=1.0,
             font=dict(size=20, family="Roboto"),
         ),
-        # plot_bgcolor="rgba(240,240,240,0.9)",
+
         paper_bgcolor="white",
         margin=dict(l=60, r=10, t=10, b=90),
         height=350,
@@ -479,11 +467,9 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
         ),
     )
 
-    # Update axes
     fig.update_xaxes(
         showgrid=True,
         gridwidth=1,
-        # gridcolor="rgba(0,0,0,0.1)",
         title_standoff=15,
     )
     fig.update_yaxes(
@@ -491,7 +477,6 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
         dtick=0.2,
         range=[-0.3, 1.19],
         gridwidth=1,
-        # gridcolor="rgba(0,0,0,0.1)",
         title_standoff=15,
     )
 
@@ -506,16 +491,11 @@ def plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year):
     #     font=dict(size=18, family="Arial", color="black"),
     # )
 
-    # Show the plot
     fig.show()
     fig.write_image("./figs/cumulative_advscore.pdf")
 
 
 plot_advscore_over_time(YEARS, DATASET_NAMES, get_all_advscore_per_year)
-# %%
-# Call the function
-
-
 # %%
 
 name = "trickme"
@@ -530,13 +510,13 @@ skills_df["subject_type"] = skills_df["subject_id"].map(
     if x.isalpha()
     else "crowd"
 )
+
 # scatter plot for skills_df
 plt.figure(figsize=(6, 6))
 sns.scatterplot(
     data=questions_df,
     x="dif_0",
     y="dif_1",
-    # hue="subject_type",
     palette="deep",
     alpha=0.7,
     s=50,
@@ -550,11 +530,9 @@ sns.scatterplot(
     alpha=0.7,
     s=50,
 )
-# %%
-# Get the questions dataframe
+
 questions_df = dataframe_dict["questions"]
 
-# Create a figure with two subplots side by side
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
 # Plot histogram for rel_0
@@ -568,20 +546,5 @@ ax2.hist(questions_df["rel_1"], bins=20, edgecolor="black")
 ax2.set_title("Histogram of rel_1")
 ax2.set_xlabel("rel_1")
 ax2.set_ylabel("Frequency")
-
-# Adjust the layout and display the plot
 plt.tight_layout()
 plt.show()
-
-# %%
-skills_df.sort_values(by="accuracy", ascending=False)
-# %%
-
-
-# Responses -> 2PL IRT params
-
-# Fit LLTM model to learn a feature coef vectors that convert
-#  feature vectors to 2PL IRT params (Supervision: Responses)
-
-# Table 1:
-# %%
