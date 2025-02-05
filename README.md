@@ -3,6 +3,19 @@ This repository contains the data and code for the **AdvScore** paper, accepted 
 
 AdvScore is a **human-centered metric** designed to evaluate the **true adversarialness** of benchmarks by capturing the varying abilities of both models and humans. Additionally, it helps identify poor-quality examples in adversarial datasets.  
 
+## 📖 Citation  
+
+If you use this work, please cite using the following BibTeX:
+
+```bibtex
+@inproceedings{sung2025advscore,
+  author    = {Yoo Yeon Sung, Maharshi Gor, Eve Fleisig, Ishani Mondal, and Jordan Boyd-Graber},
+  title     = {Is your benchmark truly adversarial? AdvScore: Evaluating Human-Grounded Adversarialness},
+  booktitle = {Proceedings of the NAACL Conference},
+  year      = {2025},
+  publisher = {Association for Computational Linguistics}
+}
+
 ---
 
 ## **Installation**  
