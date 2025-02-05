@@ -1,7 +1,8 @@
 figs/
 plots/
 scripts/
+.vscode/
 create_conda_env.sh
-funcs_camira.py
+funcs_caimira.py
 llm_utils.py
 lltm.py

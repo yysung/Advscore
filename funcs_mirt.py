@@ -8,16 +8,6 @@ SKILL_COLS = ["skill_0"]
 REL_COLS = ["disc_0"]
 DIFF_COLS = ["diff"]
 
-
-# exp_names = {
-#     # "advqa_combined": "mirt-advqa_combined-2-dim_diff-values_imp-values_fit-imp_Adam-lr=1e-02_c-reg-skill=1e-5-diff=1e-5-imp=1e-6_bs=512",
-#     "advqa_combined": "mirt-advqa_combined-2-dim_diff-values_imp-values_fit-imp_Adam-lr=5e-03_c-reg-skill=1e-5-diff=1e-5-imp=1e-6_sampler=none-w=7.0_bs=512",
-#     "fm2": "mirt-fm2-2-dim_diff-values_imp-values_fit-imp_Adam-lr=1e-02_c-reg-skill=1e-5-diff=1e-5-imp=1e-6_bs=512",
-#     # "bamboogle": "mirt-bamboogle-2-dim_diff-values_imp-values_fit-imp_Adam-lr=1e-02_c-reg-skill=1e-5-diff=1e-5-imp=1e-6_bs=512",
-#     "bamboogle": "mirt-bamboogle-1-dim_diff-values_imp-values_fit-imp_Adam-lr=5e-03_c-reg-skill=1e-5-diff=1e-5-imp=1e-6_sampler=none-w=7.0_bs=512",
-#     "trickme": "mirt-trickme-2-dim_diff-values_imp-values_fit-imp_Adam-lr=1e-02_c-reg-skill=1e-5-diff=1e-5-imp=1e-6_bs=512",
-# }
-
 CKPT_DIR = "<ckpt_dir>/"
 # 1 dim exp_names
 exp_names = {
@@ -36,8 +26,6 @@ def load_dataframe_dict(dataset_name: str, tag: str = "best"):
     all_data["agents"]["subject_id"] = all_data["agents"].index
     return all_data
 
-
-# This is one dim version
 def irt_logit_func(skills, diff, rels):
     # skills: (n_agents, n_dim)
     if len(skills.shape) == 2:
@@ -50,6 +38,3 @@ def irt_logit_func(skills, diff, rels):
         logits = np.sum(skills * rels, axis=-1) - diff[:, 0]
         logits = logits.astype(np.float32)
         return logits
-
-
-# %%
