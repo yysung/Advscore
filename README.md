@@ -63,21 +63,21 @@ python logreg.py
 >  
 > ---
 >  
-> #### 🛠️ **Model Architecture**  
+> ####  **Model Architecture**  
 > The **neural 2PL IRT model** consists of three main components:  
 >  
 > - **Item embedding layer** representing item difficulties (**βᵢ**) and discriminations (**γᵢ**)  
 > - **Person embedding layer** representing person abilities (**θⱼ**)  
 > - **Sigmoid output layer** computing the probability of a correct response  
 >  
-> **🔢 Total parameters:** **2N + M**, where:  
+> ** Total parameters:** **2N + M**, where:  
 > - **N** = number of items  
 > - **M** = number of subjects  
 > - Includes **N difficulty parameters**, **N discrimination parameters**, and **M ability parameters**  
 >  
 > ---
 >  
-> #### 📏 **Prior Distributions**  
+> ####  **Prior Distributions**  
 > To enhance **regularization** and **interpretability**, we incorporate **prior distributions** on the model parameters:  
 >  
 > - **Item difficulties** (**βᵢ**) and **person abilities** (**θⱼ**):  
@@ -85,7 +85,7 @@ python logreg.py
 > - **Item discriminations** (**γᵢ**):  
 >   - **Gamma prior** with shape **k** and scale **θ**  
 >  
-> ⚠**Why a Gamma prior for discriminations?**  
+> **Why a Gamma prior for discriminations?**  
 > Ensures positivity 
 > Allows for fine-tuning the model's **sensitivity** to item discrimination 🎯  
 >  
