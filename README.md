@@ -38,7 +38,7 @@ You can compute **AdvScore** by calculating each parameter that contributes to t
 python comp_advscore.py
 ```
 
-## **A New adversarial QA Benchmark: AdvQA**  
+## **A New Adversarial QA Benchmark: AdvQA**  
 Incentivized by AdvScore, we recruit experts to write questions that are adversarial (difficult for humans but not for models).
 This **AdvQA** dataset is available in the **`data/Advqa_text.csv`** .  
 It is also uploaded to **Hugging Face** and can be accessed here:  
@@ -52,7 +52,6 @@ We conduct a **feature analysis** by fitting a **logistic regression model** on 
 - `data/features_df.csv`  
 
 ### **Run Logistic Regression Analysis**  
-Execute the following command:  
 
 ```
 python logreg.py
